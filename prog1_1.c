@@ -3,15 +3,15 @@
 #include <stdlib.h> // standard functions for files I/O
 
 /* Function Prototypes */
-void crcTable();
-int getCRC(char* buff, int len);
-int stdCRC(char* buff, int len);
+void crcTable(unsigned int*);
+unsigned int getCRC(unsigned char* buff, int len, unsigned int*);
+//unsigned int stdCRC(unsigned char* buff, int len); // this would be the slow way it is implmented
+// it also is arguably easier to understand
 
 
 /* Program Description */
 /* This program takes in a binary file, reads it in it's entirety, prints the CRC32 checksum as a hex # 8 digits
  using the CRC Polynomial Method: x32 + x26 + x23 + x22 + x16 + x12 + x11 + x10 + x8 + x7 + x5 + x4 + x2 + x + 1 */
-
 int main(int argc, char * argv[]) {
   if (argc < 2) {
       fprintf(stderr, "Incorrect number or arguments\n"); // print to std error fd 2
@@ -33,40 +33,77 @@ int main(int argc, char * argv[]) {
   long fileSize = ftell(inFile); // get my file size, returns file offset NOTE: returns one more [0,0,0,0,0,0... EOF, HERE]
   fseek(inFile,0,SEEK_SET); // seek back to read the file properly
 
-  char* crcBuff = (char*) malloc((fileSize) * sizeof(char));
+  unsigned char* crcBuff = (unsigned char*) malloc((fileSize) * sizeof(char));
   // NOTE: for a loop of the above will need to use < less than
 
+  unsigned int* tab = (unsigned int*) malloc(sizeof(unsigned int) * 256); // everything is unsigned
+  // ^^ avoid global's which are evil
   fread(crcBuff, sizeof(char),fileSize ,inFile);
-  //crcTable(); // precompute possible XOR'd bytes
-  //getCRC(crcBuff, fileSize); // retireve the CRC of the input data
-  int checksum = stdCRC(crcBuff,fileSize) ^ 0xFFFFFFFF; // inorder to get the same as the Linux impleentation
+  crcTable(tab); // precompute possible XOR'd bytes
+  unsigned int checksum =  getCRC(crcBuff, fileSize, tab); // retireve the CRC of the input data
+  //unsigned int checksum = stdCRC(crcBuff,fileSize); // inorder to get the same as the Linux implementation
   printf("%X\n",checksum); // X is to print out the hex (uppercase)
-  if(fclose(inFile) == -1) fprintf(stderr,"Failed to close file\n");  ; // force close all files
+  if(fclose(inFile) == -1) fprintf(stderr,"Failed to close file\n");
+  free(tab); // never forget
   free(crcBuff);
   return 0;
 }
 
-int stdCRC(char* buff, int len) {
-  const unsigned int genPoly = 0x04C11DB7; // some guy did a lot of math to find this
-  unsigned int crcReg = 0xFFFFFFFF; // unsigned to get full range and also linux way
+
+// Little - Endian implementation ONLY
+void crcTable(unsigned int* table) { // could also return a local char array
+  const unsigned int genPoly = 0xEDB88320; // if big endian would use 0x04...
+  for(int i = 0; i < 256; i++) {
+    unsigned int crcReg = i;
+    for(int j = 0; j < 8; j++) { // shift untill we hit the MSB
+      if(crcReg & 1)  { // check if the sign bit is ready to be pushed out
+        crcReg = (unsigned int) (crcReg >> 1) ^ genPoly; // do the divison. NOTE: shift once to rid the irrelevant bit
+        // and of course do the XOR divison
+      }
+      else {
+        crcReg = (crcReg >> 1); // keep shifting till MSbit is set
+      }
+    } // first for (the bit by bit)
+    table[i] = crcReg;
+  }
+  return;
+}
+
+//goal is work with the input byte by bte
+// the above is intended to extend the char into a but, im pretty sure it auto casts when it is XOR'd
+// for some reason.. failed with a pointer
+unsigned int getCRC(unsigned char* buff, int len, unsigned int* table) {
+  unsigned int crcReg =  0xFFFFFFFF;
+  for(int i = 0; i < len; i++) {
+    unsigned int lookUp = (crcReg ^ buff[i]) & 0xFF; // XOR in a new and logical AND it to turn it into a byte
+    crcReg = (crcReg >> 8) ^ table[lookUp]; // shift out old MSB and XOR with new intermediate little endian e
+  }
+  return crcReg ^ 0xFFFFFFFF;
+}
+
+
+/*
+//NOTE: This implementation is the slow CRC32 for little Endian
+ unsigned int stdCRC(unsigned char* buff, int len) {
+  const unsigned int genPoly = 0xEDB88320; // some guy did a lot of math to find this
+  unsigned int crcReg =  0xFFFFFFFF; // unsigned to get full range and also linux way
 
   for(int i = 0; i < len; i++) { // for each byte...
     // done to align the byte into the MSB
     // and XOR to update the xor the next byte with curr crc value
-    crcReg = crcReg ^ (buff[i] << 24);
+    crcReg = (crcReg ^ (buff[i] & 0xFF));
     // below is the standard shifting done for each byte
     for(int j = 0; j < 8; j++) { // shift untill we hit the MSB
-      if((crcReg & 0x80000000) != 0)  { // i.e 2^37 is what it is, that means the MSB is set
-        crcReg = (crcReg << 1) ^ genPoly; // do the divison. NOTE: shift once to rid the irrelevant byte
+      if(crcReg & 1)  {
+        crcReg = (unsigned int) (crcReg >> 1) ^ genPoly; // do the divison. NOTE: shift once to rid the irrelevant byte
         // and of course do the XOR divison
       }
       else {
-        // keep shifting till MSbit is set
-        crcReg = crcReg << 1;
+        crcReg = (crcReg >> 1); // keep shifting till MSbit is set
       }
-    } // first for
+    } // first for (the bit by bit)
   } // 2nd for
-  return crcReg;
+  return crcReg ^ 0xFFFFFFFF ;
 }
+*/
 
-// hex dump for part 2??? or readl elf.. I think hd will be better
