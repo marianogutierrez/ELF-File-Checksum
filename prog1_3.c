@@ -7,9 +7,7 @@
 /* Function Prototypes */
 void crcTable(unsigned int*);
 unsigned int getCRC(unsigned char* buff, int len, unsigned int*);
-//unsigned int stdCRC(unsigned char* buff, int len); // this would be the slow way it is also implmented and makes more sense
-
-
+// removed slow way for save line space, but's in 1 and 2
 
 // For this program we comppute the CRC32 on soley the program headertable.
 int main(int argc, char * argv[]) {
@@ -25,77 +23,75 @@ int main(int argc, char * argv[]) {
     return 1;
   }
 
-    Elf64_Shdr section; // from elf.h has it all built in, the size of this is
+    Elf64_Shdr secHead; // from elf.h has it all built in, the size of this is 64 bytes
+    // use readelf -a binary. This struct is the Section header one that it details
 
     // ELF file constants
-    char sectionName[];
-    strcmp(sectionName,argv[2]); // what we need to find
+    char sectionName[256];
+    strcpy(sectionName,argv[2]); // what we need to find
+    int givenSecLen = strlen(argv[2]); // for use in strncmp
+    //NOTE was able to retreive correctly with print statement
 
     // var's to get from the elf section
-    int e_shoff; // by offset to the section header table
+    long long e_shoff; // by offset to the section header table
     short e_shentsize; // size of !an! entry in section header all entries are the same
     short e_shnum; // number of entries in the section header
     // NOTE:  e_shentsize * e_shnum = the total bytes of the section header table
-    short e_shstrndx; // holds the index of the name associated with the section name string table
+    short e_shstrndx; // holds the index of the name associated with the section name string table in the SHTable
 
    // grabbing the offset for e_shoff the start of the Section header table
    fseek(inFile,0x28,SEEK_SET); //
-   fread(&e_shoff,sizeof(e_shentsize),1,inFile); // get the 8 bytes; NOTE: Cool trick with sizeOf the name of my var! Thanks Scott.
-   fseek(inFile,0,SEEK_SET); // reset because we need to start form the file header
+   fread(&e_shoff,sizeof(e_shoff),1,inFile); // get the 8 bytes; NOTE: Cool trick with sizeOf the name of my var! Thanks Scott.
 
    //e_shentsize
    fseek(inFile,0x3A,SEEK_SET); // size of !an! entry all entries are the same size...
    fread(&e_shentsize,sizeof(e_shentsize),1,inFile);
-   fseek(inFile,0,SEEK_SET); // reset because we need to start form the file header
 
    //e_shnum
    fseek(inFile,0x3C,SEEK_SET); // num entries in the setion header table
    fread(&e_shnum,sizeof(e_shnum),1,inFile);
-   fseek(inFile,0,SEEK_SET); // reset because we need to start form the file header
 
-   //e_shstrndx
+   //e_shstrndx where the string table is for each section table
    fseek(inFile,0x3E,SEEK_SET); //
    fread(&e_shstrndx,sizeof(e_shstrndx),1,inFile);
-   fseek(inFile,0,SEEK_SET); // reset because we need to start form the file header
 
 
-   // now that we have everything
-   /* Go to the first section, then take the the index of the
-   section header table's entry assoicated with the string table * by the size of a sect header
-   this will take me to the beginning point of the SHTable.
-   */
-   fseek(inFile , e_shoff + (e_shstrndx * (e_shentsize), SEEK_SET); // @ SHTable
-   fread(&section, sizeof(sectHdr), 1, inFile); // the struct now holds all the data
-   // it is auto copied
+  unsigned char* crcBuff = (unsigned char*) malloc(sizeof(char) * 64 * 3); // 64 bytes per section and at most 3 with .gnu
+  char nameBuff[265 * 29]; // size will fit all 29 possible names no doubt s
 
-   Char* sectNames = (char*) malloc(sectHdr.sh_size); // access the newly assigned var
-   fseek(inFile, sectHdr.sh_offset, SEEK_SET); // now go to where the section begins
-   fread(sectNames, 1, sectHdr.sh_size, inFile); // read 
+  fseek(inFile, e_shoff + (e_shstrndx * sizeof(secHead)), SEEK_SET);  // go to the SHTable using e_shstrndx
+  // works bc we e-e_shstrndx tells us the index in the table where it is
+  fread(&secHead,sizeof(secHead),1,inFile); // get the fields of the section header table
 
+//NOTE: sh_offset is a byte number so I can just stick in w/o sizeof() 1st mistake
+  fseek(inFile,secHead.sh_offset, SEEK_SET); // the actual offset of the section with the strings
+  // NOTE: DO NOT DO SEEK_CUR the offset is legit the offset of 8 bytes for the address!!! Mistake that was made #2
+  fread(nameBuff,secHead.sh_size,1,inFile); // read in the size (in bytes) of the items NOTE: no need to use sizeof
+  // here because we want to copy everything not just 8 bytes
+  unsigned int* tab = (unsigned int*) malloc(sizeof(unsigned int) * 256); // everything is unsigned
+  // ^^ avoid global's which are evil
+  crcTable(tab); // precompute possible XOR'd bytes
 
-   for(int unsigned i = 0; i < e_shnum; i++) { // loop through that section header table
-      fread(&,e_shoff + i * sizeof(e_shentsize),SEEK_SET); // So, the the general offset + the number we are on * the size of each one
-      fseek();
-   } //strncmp lets you compare only a portion
-
-
-
-
-
-
-
-
-    unsigned int* tab = (unsigned int*) malloc(sizeof(unsigned int) * 256); // everything is unsigned
-    // ^^ avoid global's which are evil
-    crcTable(tab); // precompute possible XOR'd bytes
-    unsigned int checksum =  getCRC(crcBuff, pHeaderLen, tab); // retireve the CRC of the input data
-    //unsigned int checksum = stdCRC(crcBuff,fileSize); // inorder to get the same as the Linux implementation
-    printf("%X\n",checksum); // X is to print out the hex (uppercase)
+  for(int i = 0; i < e_shnum; i++) { // go thorugh all the section headers (of which there are 29 in this case)
+    fseek(inFile,e_shoff + (i * sizeof(secHead)),SEEK_SET); // Reads all of them for the idx of sh_name
+    // start at zero to read the first!
+    char * actualName; // pointer to the idx of the name
+    fread(&secHead,sizeof(secHead),1,inFile); // read in the current section headers
+    // Get the address of where the string begins in our array
+    actualName = nameBuff + secHead.sh_name; // pointer to the name + the offset (Pointer Arithmetic)
+    if(strncmp(sectionName,actualName,givenSecLen) == 0)  { // use strn, because there could be mutiple e.g .rodata and .rodata1
+      fseek(inFile,e_shoff + i * sizeof(secHead),SEEK_SET); // start of the one we were on NOTE: CRIT bc fread moves the file ptr
+      fread(crcBuff, 64,1,inFile); // GRAB IT!
+      unsigned int checksum =  getCRC(crcBuff, 64, tab); // retireve the CRC of the input data
+      printf("%X\n",checksum); // X is to print out the hex (uppercase)
+    }
+}
     if(fclose(inFile) == -1) ; // force close all files
+    free(tab);
     free(crcBuff);
+    //free(nameBuff);
     return 0;
 }
-
 
 // Little - Endian implementation ONLY
 void crcTable(unsigned int* table) { // could also return a local char array
@@ -117,8 +113,6 @@ void crcTable(unsigned int* table) { // could also return a local char array
 }
 
 //goal is work with the input byte by bte
-// the above is intended to extend the char into a but, im pretty sure it auto casts when it is XOR'd
-// for some reason.. failed with a pointer
 unsigned int getCRC(unsigned char* buff, int len, unsigned int* table) {
   unsigned int crcReg =  0xFFFFFFFF;
   for(int i = 0; i < len; i++) {
@@ -127,29 +121,3 @@ unsigned int getCRC(unsigned char* buff, int len, unsigned int* table) {
   }
   return crcReg ^ 0xFFFFFFFF;
 }
-
-
-/*
-//NOTE: This implementation is the slow CRC32 for little Endian
- unsigned int stdCRC(unsigned char* buff, int len) {
-  const unsigned int genPoly = 0xEDB88320; // some guy did a lot of math to find this
-  unsigned int crcReg =  0xFFFFFFFF; // unsigned to get full range and also linux way
-
-  for(int i = 0; i < len; i++) { // for each byte...
-    // done to align the byte into the MSB
-    // and XOR to update the xor the next byte with curr crc value
-    crcReg = (crcReg ^ (buff[i] & 0xFF));
-    // below is the standard shifting done for each byte
-    for(int j = 0; j < 8; j++) { // shift untill we hit the MSB
-      if(crcReg & 1)  {
-        crcReg = (unsigned int) (crcReg >> 1) ^ genPoly; // do the divison. NOTE: shift once to rid the irrelevant byte
-        // and of course do the XOR divison
-      }
-      else {
-        crcReg = (crcReg >> 1); // keep shifting till MSbit is set
-      }
-    } // first for (the bit by bit)
-  } // 2nd for
-  return crcReg ^ 0xFFFFFFFF ;
-}
-*/
