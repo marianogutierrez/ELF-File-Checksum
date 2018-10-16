@@ -69,9 +69,7 @@ void crcTable(unsigned int* table) { // could also return a local char array
   return;
 }
 
-//goal is work with the input byte by bte
-// the above is intended to extend the char into a but, im pretty sure it auto casts when it is XOR'd
-// for some reason.. failed with a pointer
+//goal is work with the input byte by byte
 unsigned int getCRC(unsigned char* buff, int len, unsigned int* table) {
   unsigned int crcReg =  0xFFFFFFFF;
   for(int i = 0; i < len; i++) {
@@ -106,4 +104,3 @@ unsigned int getCRC(unsigned char* buff, int len, unsigned int* table) {
   return crcReg ^ 0xFFFFFFFF ;
 }
 */
-
