@@ -1,11 +1,6 @@
 # CS530Assignment1: ELF File Verification via CRC32
 Mariano Gutierrez
 margutierrez75@gmail.com
-Compilation: prog1_(numberOfProgram) -o prog1_(numberOfProgram)
-Execute commands: prog1_1: ./prog1_1 *target file*
-prog1_2: ./prog1_2 *target file*
-prog1_3 ./prog1_3 *target file* *ELF file section e.g. .gnu *
-
 
 # prog1_1: 
    This program takes in an **Elf File** and runs the CRC32 algorithim 
@@ -28,3 +23,11 @@ prog1_3 ./prog1_3 *target file* *ELF file section e.g. .gnu *
    retrieve the location of the offset to the string table, and then take that
    to be able to retrieve the snames for comparison. A CRC32 checksum is produced
    if their are multiple with the same name e.g. .gnu
+   
+# Compilation:
+   Compilation: prog1_(numberOfProgram) -o prog1_(numberOfProgram)
+   
+# Execution commands:
+prog1_1: ./prog1_1 *target file*
+prog1_2: ./prog1_2 *target file*
+prog1_3 ./prog1_3 *target file* *ELF file section e.g. .gnu *
