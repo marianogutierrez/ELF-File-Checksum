@@ -25,12 +25,12 @@ margutierrez75@gmail.com
    if their are multiple section headers with the same name e.g. .gnu
    
 ## Compilation:
-   Compilation: '''prog1_(numberOfProgram) -o prog1_(numberOfProgram)'''
+   Compilation: ```prog1_(numberOfProgram) -o prog1_(numberOfProgram)```
    
 ## Execution commands:
-- prog1_1: '''./prog1_1 *target file* '''
-- prog1_2: '''./prog1_2 *target file* ''' 
-- prog1_3 '''./prog1_3 *target file*  *ELF file section e.g. .gnu *'''
+- prog1_1: ```./prog1_1 *target file* ```
+- prog1_2: ```./prog1_2 *target file* ```
+- prog1_3 ```./prog1_3 *target file*  *ELF file section e.g. .gnu *```
 
 ## Helpful Sources
 - Regarding CRC: http://www.sunshine2k.de/articles/coding/crc/understanding_crc.html 
