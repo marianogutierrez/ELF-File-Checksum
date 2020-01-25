@@ -24,10 +24,13 @@ margutierrez75@gmail.com
    to be able to retrieve the snames for comparison. A CRC32 checksum is produced
    if their are multiple with the same name e.g. .gnu
    
-# Compilation:
+## Compilation:
    Compilation: prog1_(numberOfProgram) -o prog1_(numberOfProgram)
    
-# Execution commands:
-prog1_1: ./prog1_1 *target file*
-prog1_2: ./prog1_2 *target file*
-prog1_3 ./prog1_3 *target file* *ELF file section e.g. .gnu *
+## Execution commands:
+- prog1_1: ./prog1_1 *target file*
+- prog1_2: ./prog1_2 *target file*
+- prog1_3 ./prog1_3 *target file* *ELF file section e.g. .gnu *
+
+## Helpful Sources
+The following link delves deep into CRC32 and was used to understand the algorithm itself: http://www.sunshine2k.de/articles/coding/crc/understanding_crc.html
