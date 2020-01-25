@@ -33,4 +33,5 @@ margutierrez75@gmail.com
 - prog1_3 ./prog1_3 *target file*  *ELF file section e.g. .gnu *
 
 ## Helpful Sources
-The following link delves deep into CRC32 and was used to understand the algorithm itself: http://www.sunshine2k.de/articles/coding/crc/understanding_crc.html
+The following link delves deep into CRC32 and was used to understand the algorithm itself: -   http://www.sunshine2k.de/articles/coding/crc/understanding_crc.html
+- https://linux.die.net/man/5/elf 
