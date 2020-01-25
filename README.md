@@ -16,13 +16,13 @@ margutierrez75@gmail.com
     
 ## prog1_3:
    This program makes use of **<elf.h>** in order to save a great amount of time 
-   with struct construction. It  takes in **an elf file, and the section header you want to CRC32** 
+   with struct construction. It  takes in **an elf file, and the section header you want to CRC32.** 
    With the header file one can simply seek into the
    proper section header and read the section and correctly fill in **ALL** 
    the fields of each struct within the section header table. This can be used to
    retrieve the location of the offset to the string table, and then take that
    to be able to retrieve the snames for comparison. A CRC32 checksum is produced
-   if their are multiple with the same name e.g. .gnu
+   if their are multiple section headers with the same name e.g. .gnu
    
 ## Compilation:
    Compilation: prog1_(numberOfProgram) -o prog1_(numberOfProgram)
